@@ -52,29 +52,31 @@ def send_slack_message(message):
         print(f"Error sending message: {e.response['error']}")
 
 def main():
-		try:
-	      start_time = datetime.datetime.now()
-		    # 데이터베이스 백업
-	      backup_file = backup_db()
-	      # SCP를 사용하여 백업 파일 전송
-	      send_to_remote_server(backup_file)
-		
-	      end_time = datetime.datetime.now()
-  	    elapsed_time = (end_time - start_time).total_seconds()
-	      backup_size = os.path.getsize(backup_file)
+    try:
+        start_time = datetime.datetime.now()
+        # 데이터베이스 백업
+        backup_file = backup_db()
+        # SCP를 사용하여 백업 파일 전송
+        send_to_remote_server(backup_file)
+        
+        end_time = datetime.datetime.now()
+        elapsed_time = (end_time - start_time).total_seconds()
+        backup_size = os.path.getsize(backup_file)
 
-	      # 결과 정보 전송
-	      message = (f"Backup이 정상적으로 완료되었답니다 :) 걱정마세효!\n"
-	                 f"Database: {db_name}\n"
-	                 f"Backup File: {backup_file}\n"
-	                 f"Size: {backup_size} bytes\n"
-	                 f"Start Time: {start_time}\n"
-	                 f"End Time: {end_time}\n"
-	                 f"Total Time: {elapsed_time} seconds")
-  	    send_slack_message(message)
-	  except Exception as e:
-		  error_message = f"Backup 중 오류가 발생하였습니다"
-      error_message += traceback.format_exc()
-      send_slack_message(error_message)
+        # 결과 정보 전송
+        message = (f"Backup이 정상적으로 완료되었답니다 :) 걱정마세효!\n"
+                   f"Database: {db_name}\n"
+                   f"Backup File: {backup_file}\n"
+                   f"Size: {backup_size} bytes\n"
+                   f"Start Time: {start_time}\n"
+                   f"End Time: {end_time}\n"
+                   f"Total Time: {elapsed_time} seconds")
+        send_slack_message(message)
+    except Exception as e:
+        error_message = f"Backup 중 오류가 발생하였습니다"
+        error_message += traceback.format_exc()
+        send_slack_message(error_message)
+
 if __name__ == "__main__":
     main()
+
