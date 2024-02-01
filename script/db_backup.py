@@ -1,72 +1,80 @@
+import os
+import subprocess
+import datetime
+import json
+import gzip
+import shutil
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
-import json
-import yaml
-import csv
-from datetime import datetime
-import requests
-from apscheduler.schedulers.blocking import BlockingScheduler
+import traceback
 
-slack_token = "your_app_token"
+# 환경 변수 설정
+db_name = "db_name"  # 데이터베이스 이름
+db_user = "db_user_name"        # 백업 사용자 이름
+db_password = "your_db_password"       # 백업 사용자 비밀번호
+backup_path = "backup_local_path"  # 로컬 백업 경로
+remote_user = "remote_server_user_name"      # 원격 서버 사용자 이름
+remote_ip = "remote_server_ip"         # 원격 서버 IP 주소
+remote_path = "your_backup_remote_path"  # 원격 서버 백업 경로
+slack_token = "your_app_token"  # Slack 토큰
+channel_id = "your_channel_id"    # Slack 채널 ID
+
+# Slack 클라이언트 초기화
 client = WebClient(token=slack_token)
 
-def read_file_and_send_slack(file_path, channel):
-    with open(file_path, 'r') as file:
-        contents = file.read()
+def backup_db():
+    # 현재 날짜 및 시간을 이용한 백업 파일 이름 생성 
+    date = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_filename = f"{db_name}_{date}.sql"
+    backup_filepath = os.path.join(backup_path, backup_filename)
 
+    # MariaDB 백업 명령어 실행
+    os.system(f"mysqldump -u {db_user} -p{db_password} {db_name} > {backup_filepath}")
+
+    # 파일 압축
+    with open(backup_filepath, 'rb') as f_in, gzip.open(f'{backup_filepath}.gz', 'wb') as f_out:
+        shutil.copyfileobj(f_in, f_out)
+    os.remove(backup_filepath)
+
+    return backup_filepath + ".gz"
+
+def send_to_remote_server(local_file):
+    # SCP를 사용하여 로컬 파일을 원격 서버로 전송
+    scp_command = f"scp {local_file} {remote_user}@{remote_ip}:{remote_path}"
+    process = subprocess.Popen(scp_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process.communicate()
+
+def send_slack_message(message):
     try:
-        response = client.files_upload_v2(
-            channels=channel,
-            content=contents,
-            filename=file_path,
-            initial_comment=f"Contents of {file_path}"
-        )
+        # Slack 메시지 전송
+        response = client.chat_postMessage(channel=channel_id, text=message)
     except SlackApiError as e:
-        print(f"Error in read_file_and_send_slack: {e}")
-        assert e.response["error"]
+        print(f"Error sending message: {e.response['error']}")
 
-def check_network_status():
-    server_ip = "172.16.1.10"
+def main():
+		try:
+	      start_time = datetime.datetime.now()
+		    # 데이터베이스 백업
+	      backup_file = backup_db()
+	      # SCP를 사용하여 백업 파일 전송
+	      send_to_remote_server(backup_file)
+		
+	      end_time = datetime.datetime.now()
+  	    elapsed_time = (end_time - start_time).total_seconds()
+	      backup_size = os.path.getsize(backup_file)
 
-    try:
-        response = requests.get(f"http://{server_ip}", timeout=5)
-        status = "Success" if response.status_code == 200 else "Failed"
-    except requests.ConnectionError:
-        status = "Failed"
-
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    # 통계 정보 생성
-    stats = {
-        'timestamp': current_time,
-        'server_ip': server_ip,
-        'connection_status': status
-    }
-
-    # CSV 파일로 저장
-    with open('network_stats.csv', 'a', newline='') as csv_file:
-        writer = csv.DictWriter(csv_file, fieldnames=stats.keys())
-        if csv_file.tell() == 0:
-            writer.writeheader()
-        writer.writerow(stats)
-
-    # JSON 파일로 저장
-    with open('network_stats.json', 'a') as json_file:
-        json.dump(stats, json_file, indent=2)
-        json_file.write('\n')
-
-    # YAML 파일로 저장
-    with open('network_stats.yaml', 'a') as yaml_file:
-        yaml.dump(stats, yaml_file, default_flow_style=False)
-        yaml_file.write('\n')
-
-    channel = "your_channel_id"
-    # 슬랙 메시지 전송
-    read_file_and_send_slack('network_stats.csv', channel)
-    read_file_and_send_slack('network_stats.json', channel)
-    read_file_and_send_slack('network_stats.yaml', channel)
-
+	      # 결과 정보 전송
+	      message = (f"Backup이 정상적으로 완료되었답니다 :) 걱정마세효!\n"
+	                 f"Database: {db_name}\n"
+	                 f"Backup File: {backup_file}\n"
+	                 f"Size: {backup_size} bytes\n"
+	                 f"Start Time: {start_time}\n"
+	                 f"End Time: {end_time}\n"
+	                 f"Total Time: {elapsed_time} seconds")
+  	    send_slack_message(message)
+	  except Exception as e:
+		  error_message = f"Backup 중 오류가 발생하였습니다"
+      error_message += traceback.format_exc()
+      send_slack_message(error_message)
 if __name__ == "__main__":
-    scheduler = BlockingScheduler()
-    scheduler.add_job(check_network_status, 'interval', minutes=1)
-    scheduler.start()
+    main()
