@@ -1,0 +1,11 @@
+APScheduler==3.10.4
+certifi==2023.11.17
+charset-normalizer==3.3.2
+idna==3.6
+pytz==2023.4
+PyYAML==6.0.1
+requests==2.31.0
+six==1.16.0
+slack_sdk==3.26.2
+tzlocal==5.2
+urllib3==2.2.0
