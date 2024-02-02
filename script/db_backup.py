@@ -19,6 +19,8 @@ database_config = read_database_config()
 db_name = database_config['db_name']
 db_user = database_config['db_user']
 db_password = database_config['db_password']
+db_port = database_config['db_port']
+db_ip = database_config['db_ip']
 
 # 원격 서버 설정 읽기
 remote_config = read_remote_config()
@@ -40,7 +42,7 @@ def backup_db():
     backup_filepath = os.path.join(backup_path, backup_filename)
 
     # MariaDB 백업 명령어 실행
-    os.system(f"mysqldump -u {db_user} -p{db_password} {db_name} > {backup_filepath}")
+    os.system(f"mysqldump -u {db_user} -p{db_password} -h{db_ip} {db_name} -P {db_port} > {backup_filepath}")
 
     # 파일 압축
     with open(backup_filepath, 'rb') as f_in, gzip.open(f'{backup_filepath}.gz', 'wb') as f_out:
