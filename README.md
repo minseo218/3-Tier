@@ -4,7 +4,7 @@
 
 
 ## How to use this scirpt
-#### 1. Download the requirments.txt , variable.conf and scirpt files
+#### 1. Download the requirments.txt , variable.conf, config_reader.conf and scirpt files
 #### 2. Run requirments file using `pip install -r requirements.txt`
 #### 3. Change the variable
   config file has `slack_token` and `channel`.
