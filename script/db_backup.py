@@ -7,17 +7,28 @@ import shutil
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 import traceback
+from config_reader import read_slack_config, read_database_config, read_remote_config, read_local_config
 
-# 환경 변수 설정
-db_name = "db_name"  # 데이터베이스 이름
-db_user = "db_user_name"        # 백업 사용자 이름
-db_password = "your_db_password"       # 백업 사용자 비밀번호
-backup_path = "backup_local_path"  # 로컬 백업 경로
-remote_user = "remote_server_user_name"      # 원격 서버 사용자 이름
-remote_ip = "remote_server_ip"         # 원격 서버 IP 주소
-remote_path = "your_backup_remote_path"  # 원격 서버 백업 경로
-slack_token = "your_app_token"  # Slack 토큰
-channel_id = "your_channel_id"    # Slack 채널 ID
+# Slack 설정 읽기
+slack_config = read_slack_config()
+slack_token = slack_config['slack_token']
+channel_id = slack_config['channel_id']
+
+# 데이터베이스 설정 읽기
+database_config = read_database_config()
+db_name = database_config['db_name']
+db_user = database_config['db_user']
+db_password = database_config['db_password']
+
+# 원격 서버 설정 읽기
+remote_config = read_remote_config()
+remote_user = remote_config['remote_user']
+remote_ip = remote_config['remote_ip']
+remote_path = remote_config['remote_path']
+
+# 로컬 설정 읽기
+local_config = read_local_config()
+backup_path = local_config['backup_path']
 
 # Slack 클라이언트 초기화
 client = WebClient(token=slack_token)
@@ -79,4 +90,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
