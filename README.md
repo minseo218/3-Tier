@@ -1,3 +1,7 @@
+## Info
+#### Ubuntu-22.0
+#### Python 3.10.12
+
 ## How to use this scirpt
 #### 1. Download the requirments.txt and scirpt files
 #### 2. Run requirments file using `pip install -r requirements.txt`
