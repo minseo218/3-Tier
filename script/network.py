@@ -6,8 +6,13 @@ import csv
 from datetime import datetime
 import requests
 from apscheduler.schedulers.blocking import BlockingScheduler
+from config_reader import read_slack_config
 
-slack_token = "your_app_token"
+# 설정 읽기
+slack_config = read_slack_config()
+slack_token = slack_config['token']
+channel_id = slack_config['channel_id']
+
 client = WebClient(token=slack_token)
 
 def read_file_and_send_slack(file_path, channel):
@@ -61,10 +66,9 @@ def check_network_status():
         yaml_file.write('\n')
 
     # 슬랙 메시지 전송
-    channel = "your_channel_id"
-    read_file_and_send_slack('network_stats.csv', channel)
-    read_file_and_send_slack('network_stats.json', channel)
-    read_file_and_send_slack('network_stats.yaml', channel)
+    read_file_and_send_slack('network_stats.csv', channel_id)
+    read_file_and_send_slack('network_stats.json', channel_id)
+    read_file_and_send_slack('network_stats.yaml', channel_id)
 
 if __name__ == "__main__":
     scheduler = BlockingScheduler()
